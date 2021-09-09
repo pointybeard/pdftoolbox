@@ -38,10 +38,10 @@ class PdfToolbox
     {
     }
 
-    private static function runPdfToolboxWithArgs(string $args, string &$stdout = null, string &$stderr = null): void
+    private static function runPdfWithArgs(string $args, string &$stdout = null, string &$stderr = null): void
     {
         // (guard) pdfToolbox is not installed or isn't in PATH
-        self::assertPdfToolboxInstalled();
+        self::assertInstalled();
 
         $command = sprintf('%s %s', Cli\which(self::EXECUTABLE_NAME), $args);
 
@@ -52,7 +52,7 @@ class PdfToolbox
         }
     }
 
-    private static function assertPdfToolboxInstalled(): void
+    private static function assertInstalled(): void
     {
         if (null == Cli\which(self::EXECUTABLE_NAME)) {
             throw new PdfToolboxAssertionFailedException(self::EXECUTABLE_NAME.' executable cannot be located.');
@@ -75,7 +75,7 @@ class PdfToolbox
 
     public static function version(): ?string
     {
-        self::runPdfToolboxWithArgs('--version', $output);
+        self::runPdfWithArgs('--version', $output);
 
         return $output;
     }
@@ -161,14 +161,14 @@ class PdfToolbox
 
     public static function process(string $profile, $inputFiles, array $options = [], ?string &$output = null, ?string &$errors = null): bool
     {
-        $args = [];
+        $opts = [];
         foreach ($options as $name => $value) {
             // (guard) $name is numeric
             if (true == is_numeric($name)) {
                 $name = $value;
                 $value = null;
             }
-            $args[] = self::generateOptionKeyValueString($name, $value);
+            $opts[] = self::generateOptionKeyValueString($name, $value);
         }
 
         if (false == is_array($inputFiles)) {
@@ -182,13 +182,13 @@ class PdfToolbox
         array_map('self::assertFileExists', $inputFiles);
 
         $command = sprintf(
-            '%s %s %s', // <profile> <input files> [<input files> [...] ] <args>
+            '%s %s %s', // <profile> <input files> [<input files> [...] ] <options>
             $profile,
             implode(' ', $inputFiles),
-            implode(' ', $args)
+            implode(' ', $opts)
         );
 
-        self::runPdfToolboxWithArgs($command, $output, $errors);
+        self::runPdfWithArgs($command, $output, $errors);
 
         return true;
     }
