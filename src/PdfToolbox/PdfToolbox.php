@@ -22,71 +22,16 @@ use pointybeard\PdfToolbox\Exceptions\PdfToolboxExecutionFailedException;
 class PdfToolbox
 {
     // This is the name of the pdfToolbox executable
-    private const EXECUTABLE_NAME = 'pdfToolbox';
+    public const EXECUTABLE_NAME = 'pdfToolbox';
 
-    private static $paths = [];
+    public const OPTION_TYPE_LONG = '--';
+
+    public const OPTION_TYPE_SHORT = '-';
+
+    public const OPTION_DELIMITER_DEFAULT = ',';
 
     // Supported options. This is a mirror of options available directly. See pdfToolbox --help for more details
-    private static $options = [
-        'visiblelayers',
-        'logexecution',
-        'trace_nosubfolders',
-        'trace',
-        'syntaxchecks',
-        'novariables',
-        'jobid',
-        'referencexobjectpath',
-        'maxpages',
-        'openpassword',
-        'addxmp',
-        'certify',
-        'incremental',
-        'hitsperpage',
-        'hitsperdoc',
-        'setvariablepath',
-        'setvariable',
-        'analyze',
-        'nosummary',
-        'nohits',
-        'uncompressimg',
-        'licensetype',
-        'timeout_licenseserver',
-        'lsmessage',
-        'licenseserver',
-        'satellite_type',
-        'timeout_satellite',
-        'timeout_dispatcher',
-        'noshadowfiles',
-        'nolocal',
-        'endpoint',
-        'dist',
-        'timeout',
-        'customdict',
-        'language',
-        'maxmemory',
-        'cachefolder',
-        'noprogress',
-        'timestamp',
-        'topdf_noremotecontent',
-        'topdf_psepilogue',
-        'topdf_psprologue',
-        'password',
-        'topdf_parameter',
-        'topdf_psfontsonly',
-        'topdf_psaddfonts',
-        'topdf_ignore',
-        'pagerange',
-        'topdf_pdfsetting',
-        'topdf_useexcelpagelayout',
-        'topdf_screen',
-        'optimizepdf',
-        'nooptimization',
-        'outputfile',
-        'outputfolder',
-        'overwrite',
-        'suffix',
-        'report',
-    ];
+    private static $options = ['visiblelayers', 'logexecution', 'trace_nosubfolders', 'trace', 'syntaxchecks', 'novariables', 'jobid', 'referencexobjectpath', 'maxpages', 'openpassword', 'addxmp', 'certify', 'incremental', 'hitsperpage', 'hitsperdoc', 'setvariablepath', 'setvariable', 'a' => ['aliasFor' => 'analyze'], 'analyze', 'nosummary', 'nohits', 'uncompressimg', 'licensetype', 'timeout_licenseserver', 'lsmessage', 'licenseserver', 'satellite_type', 'timeout_satellite', 'timeout_dispatcher', 'noshadowfiles', 'nolocal', 'endpoint', 'dist', 'timeout', 'customdict', 'l' => ['aliasFor' => 'language'], 'language', 'maxmemory', 'cachefolder', 'noprogress', 't' => ['aliasFor' => 'timestamp'], 'timestamp', 'topdf_noremotecontent', 'topdf_psepilogue', 'topdf_psprologue', 'password', 'topdf_parameter', 'topdf_psfontsonly', 'topdf_psaddfonts', 'topdf_ignore', 'p' => ['aliasFor' => 'pagerange'], 'pagerange', 'topdf_pdfsetting', 'topdf_useexcelpagelayout', 'topdf_screen', 'optimizepdf', 'nooptimization', 'o' => ['aliasFor' => 'outputfile'], 'outputfile', 'f' => ['aliasFor' => 'outputfolder'], 'outputfolder', 'w' => ['aliasFor' => 'overwrite'], 'overwrite', 's' => ['aliasFor' => 'suffix'], 'suffix', 'r' => ['aliasFor' => 'report'], 'report' => ['delimiter' => ',']];
 
     // Make sure this class cannot be instanciated
     private function __construct()
@@ -114,10 +59,10 @@ class PdfToolbox
         }
     }
 
-    private static function assertOptionExists($option): void
+    private static function assertOptionValid($option): void
     {
-        if (false == in_array($option, self::$options)) {
-            throw new PdfToolboxAssertionFailedException("Invalid option '{$option}' specified.");
+        if (null == self::getOption($option)) {
+            throw new PdfToolboxAssertionFailedException("Unsupported option '{$option}' specified.");
         }
     }
 
@@ -135,7 +80,62 @@ class PdfToolbox
         return $output;
     }
 
-    public static function processString(string $profile, string $input, array $arguments = [], ?string &$output = null, ?string &$errors = null): bool
+    public static function getOptions(): array
+    {
+        return self::$options;
+    }
+
+    private static function getOptionType(string $name): string
+    {
+        return 1 == strlen($name) ? self::OPTION_TYPE_SHORT : self::OPTION_TYPE_LONG;
+    }
+
+    private static function getOption($name, bool $resolveAlias = true)
+    {
+
+        // (guard) option doesn't exist
+        if (false == in_array($name, self::$options) && false == array_key_exists($name, self::$options)) {
+            return null;
+        }
+
+        // (guard) simple option with no additional properties
+        if (false == array_key_exists($name, self::$options)) {
+            return $name;
+        }
+
+        $o = self::$options[$name];
+
+        return false == $resolveAlias || false == isset($o['aliasFor']) ? $o : self::getOption($o['aliasFor'], false);
+    }
+
+    private static function getOptionDelimiter(string $name): string
+    {
+        return self::getOption($name)['delimiter'] ?? self::OPTION_DELIMITER_DEFAULT;
+    }
+
+    private static function generateOptionKeyValueString(string $name, $value): string
+    {
+        // (guard) option name is invalid
+        self::assertOptionValid($name);
+
+        // This will give us either the short (-) or long (--) prefix to use later
+        $type = self::getOptionType($name);
+
+        // (guard) value is null
+        if (null == $value) {
+            return $type.$name;
+        }
+
+        return $type.sprintf(
+            self::OPTION_TYPE_SHORT == $type
+                ? '%s "%s"'
+                : '%s="%s"',
+            $name,
+            implode(self::getOptionDelimiter($name), false == is_array($value) ? [$value] : $value) //imploding an array gives us support for multiple values as input
+        );
+    }
+
+    public static function processString(string $profile, string $input, array $options = [], ?string &$output = null, ?string &$errors = null): bool
     {
         // Save the string contents to a tmp file then call self::process();
         $inputFile = tempnam(sys_get_temp_dir(), self::EXECUTABLE_NAME);
@@ -156,28 +156,19 @@ class PdfToolbox
             throw new PdfToolboxException("Unable to save input string to temporary file {$inputFile}.");
         }
 
-        return self::process($profile, $inputFile, $arguments, $output, $errors);
+        return self::process($profile, $inputFile, $options, $output, $errors);
     }
 
-    public static function process(string $profile, $inputFiles, array $arguments = [], ?string &$output = null, ?string &$errors = null): bool
+    public static function process(string $profile, $inputFiles, array $options = [], ?string &$output = null, ?string &$errors = null): bool
     {
         $args = [];
-        foreach ($arguments as $name => $value) {
-
-            // (guard) option name is invalid
-            self::assertOptionExists($name);
-
-            if (is_numeric($name)) {
-                $args[] = "--{$value}";
-
-                continue;
+        foreach ($options as $name => $value) {
+            // (guard) $name is numeric
+            if (true == is_numeric($name)) {
+                $name = $value;
+                $value = null;
             }
-
-            if (false == is_array($value)) {
-                $value = [$value];
-            }
-
-            $args[] = sprintf('--%s="%s"', $name, implode(' ', $value));
+            $args[] = self::generateOptionKeyValueString($name, $value);
         }
 
         if (false == is_array($inputFiles)) {
@@ -190,12 +181,14 @@ class PdfToolbox
         // (guard) input file doesn't exist
         array_map('self::assertFileExists', $inputFiles);
 
-        self::runPdfToolboxWithArgs(sprintf(
+        $command = sprintf(
             '%s %s %s', // <profile> <input files> [<input files> [...] ] <args>
             $profile,
             implode(' ', $inputFiles),
             implode(' ', $args)
-        ), $output, $errors);
+        );
+
+        self::runPdfToolboxWithArgs($command, $output, $errors);
 
         return true;
     }

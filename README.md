@@ -28,16 +28,13 @@ include "vendor/autoload.php";
 
 use pointybeard\PdfToolbox;
 
-// Print version information
-print PdfToolbox\PdfToolbox::version() . PHP_EOL;
-
 // Generate a report for input files using profile
 PdfToolbox\PdfToolbox::process(
-    "test_profile.xml",
-    ["test.pdf", "test2.pdf"],
+    'test_profile.xml',
+    ['test.pdf', 'test2.pdf'],
     [
-        "r" => "VARDUMP,PATH=./report/testreport.json",
-        "analyze"
+        'r' => ['VARDUMP', 'PATH=./report/testreport.json', 'ERROR,WARNING'],
+        'analyze',
     ],
     $o,
     $e
