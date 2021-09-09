@@ -33,8 +33,8 @@ PdfToolbox\PdfToolbox::process(
     'test_profile.xml',
     ['test.pdf', 'test2.pdf'],
     [
-        'r' => ['VARDUMP', 'PATH=./report/testreport.json', 'ERROR,WARNING'],
-        'analyze',
+        'report' => ['VARDUMP', 'ERROR,WARNING', 'PATH=./report/testreport.json'],
+        'a',
     ],
     $o,
     $e
