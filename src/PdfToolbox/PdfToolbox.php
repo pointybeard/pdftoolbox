@@ -135,7 +135,7 @@ class PdfToolbox
         return $output;
     }
 
-    public static function processString(string $profile, string $input, array $arguments = [], ?string &$output = null, ?string &$errors = null): string
+    public static function processString(string $profile, string $input, array $arguments = [], ?string &$output = null, ?string &$errors = null): bool
     {
         // Save the string contents to a tmp file then call self::process();
         $inputFile = tempnam(sys_get_temp_dir(), self::EXECUTABLE_NAME);
@@ -159,7 +159,7 @@ class PdfToolbox
         return self::process($profile, $inputFile, $arguments, $output, $errors);
     }
 
-    public static function process(string $profile, $inputFiles, array $arguments = [], ?string &$output = null, ?string &$errors = null): string
+    public static function process(string $profile, $inputFiles, array $arguments = [], ?string &$output = null, ?string &$errors = null): bool
     {
         $args = [];
         foreach ($arguments as $name => $value) {
@@ -197,6 +197,6 @@ class PdfToolbox
             implode(' ', $args)
         ), $output, $errors);
 
-        return $outputFile;
+        return true;
     }
 }
