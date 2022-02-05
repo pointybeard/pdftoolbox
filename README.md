@@ -30,11 +30,15 @@ use pointybeard\PdfToolbox;
 
 // Generate a report for input files using profile
 PdfToolbox\PdfToolbox::process(
-    'test_profile.xml',
+    'test_profile.kfpx',
     ['test.pdf', 'test2.pdf'],
     [
-        'report' => ['VARDUMP', 'ERROR,WARNING', 'PATH=./report/testreport.json'],
+        'report' => ['JSON,ERROR,WARNING,PATH=./report/testreport.json'],
         'a',
+        'setvariable' => [
+            'RESOLUTION:300',
+            'PAGE_COUNT:2',
+        ]
     ],
     $o,
     $e
