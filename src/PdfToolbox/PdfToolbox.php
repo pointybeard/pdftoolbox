@@ -46,6 +46,12 @@ class PdfToolbox
         try {
             Cli\run_command($command, $stdout, $stderr, $exitCode);
         } catch (Exception $ex) {
+
+            // (guard) Error codes < 100 indicate successful operation
+            if($exitCode < 100) {
+                return;
+            }
+
             throw new PdfToolboxExecutionFailedException($args, $stderr, $exitCode, 0, $ex);
         }
     }
