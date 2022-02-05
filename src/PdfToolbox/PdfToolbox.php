@@ -28,10 +28,8 @@ class PdfToolbox
 
     public const OPTION_TYPE_SHORT = '-';
 
-    public const OPTION_DELIMITER_DEFAULT = ',';
-
     // Supported options. This is a mirror of options available directly. See pdfToolbox --help for more details
-    private static $options = ['visiblelayers', 'logexecution', 'trace_nosubfolders', 'trace', 'syntaxchecks', 'novariables', 'jobid', 'referencexobjectpath', 'maxpages', 'openpassword', 'addxmp', 'certify', 'incremental', 'hitsperpage', 'hitsperdoc', 'setvariablepath', 'setvariable', 'a' => ['aliasFor' => 'analyze'], 'analyze', 'nosummary', 'nohits', 'uncompressimg', 'licensetype', 'timeout_licenseserver', 'lsmessage', 'licenseserver', 'satellite_type', 'timeout_satellite', 'timeout_dispatcher', 'noshadowfiles', 'nolocal', 'endpoint', 'dist', 'timeout', 'customdict', 'l' => ['aliasFor' => 'language'], 'language', 'maxmemory', 'cachefolder', 'noprogress', 't' => ['aliasFor' => 'timestamp'], 'timestamp', 'topdf_noremotecontent', 'topdf_psepilogue', 'topdf_psprologue', 'password', 'topdf_parameter', 'topdf_psfontsonly', 'topdf_psaddfonts', 'topdf_ignore', 'p' => ['aliasFor' => 'pagerange'], 'pagerange', 'topdf_pdfsetting', 'topdf_useexcelpagelayout', 'topdf_screen', 'optimizepdf', 'nooptimization', 'o' => ['aliasFor' => 'outputfile'], 'outputfile', 'f' => ['aliasFor' => 'outputfolder'], 'outputfolder', 'w' => ['aliasFor' => 'overwrite'], 'overwrite', 's' => ['aliasFor' => 'suffix'], 'suffix', 'report' => ['delimiter' => ',']];
+    private static $options = ['visiblelayers', 'logexecution', 'trace_nosubfolders', 'trace', 'syntaxchecks', 'novariables', 'jobid', 'referencexobjectpath', 'maxpages', 'openpassword', 'addxmp', 'certify', 'incremental', 'hitsperpage', 'hitsperdoc', 'setvariablepath', 'setvariable', 'a' => ['aliasFor' => 'analyze'], 'analyze', 'nosummary', 'nohits', 'uncompressimg', 'licensetype', 'timeout_licenseserver', 'lsmessage', 'licenseserver', 'satellite_type', 'timeout_satellite', 'timeout_dispatcher', 'noshadowfiles', 'nolocal', 'endpoint', 'dist', 'timeout', 'customdict', 'l' => ['aliasFor' => 'language'], 'language', 'maxmemory', 'cachefolder', 'noprogress', 't' => ['aliasFor' => 'timestamp'], 'timestamp', 'topdf_noremotecontent', 'topdf_psepilogue', 'topdf_psprologue', 'password', 'topdf_parameter', 'topdf_psfontsonly', 'topdf_psaddfonts', 'topdf_ignore', 'p' => ['aliasFor' => 'pagerange'], 'pagerange', 'topdf_pdfsetting', 'topdf_useexcelpagelayout', 'topdf_screen', 'optimizepdf', 'nooptimization', 'o' => ['aliasFor' => 'outputfile'], 'outputfile', 'f' => ['aliasFor' => 'outputfolder'], 'outputfolder', 'w' => ['aliasFor' => 'overwrite'], 'overwrite', 's' => ['aliasFor' => 'suffix'], 'suffix', 'report'];
 
     // Make sure this class cannot be instanciated
     private function __construct()
@@ -108,11 +106,6 @@ class PdfToolbox
         return false == $resolveAlias || false == isset($o['aliasFor']) ? $o : self::getOption($o['aliasFor'], false);
     }
 
-    private static function getOptionDelimiter(string $name): string
-    {
-        return self::getOption($name)['delimiter'] ?? self::OPTION_DELIMITER_DEFAULT;
-    }
-
     private static function generateOptionKeyValueString(string $name, $value): string
     {
         // (guard) option name is invalid
@@ -131,7 +124,7 @@ class PdfToolbox
                 ? '%s "%s"'
                 : '%s="%s"',
             $name,
-            implode(self::getOptionDelimiter($name), false == is_array($value) ? [$value] : $value) //imploding an array gives us support for multiple values as input
+            $value
         );
     }
 
@@ -168,7 +161,15 @@ class PdfToolbox
                 $name = $value;
                 $value = null;
             }
-            $opts[] = self::generateOptionKeyValueString($name, $value);
+
+            if (false == is_array($value)) {
+                $value = [$value];
+            }
+
+            // This gives us support for multiple items with the same name. E.g. setvariable
+            foreach ($value as $v) {
+                $opts[] = self::generateOptionKeyValueString($name, $v);
+            }
         }
 
         if (false == is_array($inputFiles)) {
