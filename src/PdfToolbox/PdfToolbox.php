@@ -36,7 +36,7 @@ class PdfToolbox
     {
     }
 
-    private static function runPdfWithArgs(string $args, string &$stdout = null, string &$stderr = null): void
+    private static function runPdfWithArgs(string $args, string &$stdout = null, string &$stderr = null, int &$exitCode = null): void
     {
         // (guard) pdfToolbox is not installed or isn't in PATH
         self::assertInstalled();
@@ -158,7 +158,7 @@ class PdfToolbox
         return self::process($profile, $inputFile, $options, $output, $errors);
     }
 
-    public static function process(string $profile, $inputFiles, array $options = [], ?string &$output = null, ?string &$errors = null): bool
+    public static function process(string $profile, $inputFiles, array $options = [], ?string &$output = null, ?string &$errors = null, ?int &$code = null): bool
     {
         $opts = [];
         foreach ($options as $name => $value) {
@@ -195,7 +195,7 @@ class PdfToolbox
             implode(' ', $opts)
         );
 
-        self::runPdfWithArgs($command, $output, $errors);
+        self::runPdfWithArgs($command, $output, $errors, $code);
 
         return true;
     }
